@@ -524,6 +524,8 @@ a { color: inherit; }
   text-transform: uppercase;
   transition: background var(--fast), color var(--fast);
   margin-bottom: .55rem;
+  cursor: pointer;
+  border-radius: 4px;
 }
 .btn-outline:hover { background: var(--dark); color: var(--white); }
 
@@ -539,28 +541,147 @@ a { color: inherit; }
   text-transform: uppercase;
   transition: background var(--fast), border-color var(--fast);
   margin-bottom: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
 }
 .btn-fill:hover { background: var(--gold); border-color: var(--gold); }
 
 
 
+/* Mobile navigation arrows for images */
+.mobile-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  color: var(--dark);
+  cursor: pointer;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--fast);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.mobile-nav-arrow:hover { background: rgba(255, 255, 255, 0.95); }
+.mobile-nav-prev { left: 0.8rem; }
+.mobile-nav-next { right: 0.8rem; }
+
 /* Mobile: product modal full-screen */
 @media (max-width: 680px) {
-  .pmodal { padding: 0; align-items: flex-end; }
+  .pmodal { 
+    padding: 0; 
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
   .pmodal-inner {
     grid-template-columns: 1fr;
-    max-height: 96vh;
-    border-radius: 16px 16px 0 0;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(0) scale(1);
   }
-  .pmodal-gallery { max-height: 55vw; flex-direction: row; background: var(--off); }
-  .pmodal-main-img img { max-height: 55vw; }
-  .pmodal-thumbs { border-top: none; border-left: 1px solid var(--border); flex-direction: column; gap: .4rem; padding: .5rem; }
-  .pthumb { width: 48px; height: 48px; }
-  .pmodal-details { padding: 1.2rem 1rem; }
+  .pmodal.open .pmodal-inner { 
+    transform: translateY(0) scale(1); 
+  }
+  
+  .pmodal-gallery { 
+    max-height: 70vh; 
+    flex-direction: column; 
+    background: var(--off);
+    flex-shrink: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .pmodal-main-img { 
+    flex: 1;
+    width: 100%;
+    padding: 2rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .pmodal-main-img img { 
+    max-height: 60vh;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  
+  .mobile-nav-arrow {
+    display: flex !important;
+  }
+  
+  #image-counter {
+    display: block !important;
+    background: var(--white);
+    border-top: none !important;
+  }
+  
+  .pmodal-thumbs { 
+    display: none !important;
+  }
+  
+  .pmodal-details { 
+    padding: 1.4rem 1.2rem;
+    flex: 1;
+    overflow-y: auto;
+    gap: 0.8rem;
+  }
+
+  .pmodal-name {
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    margin-bottom: 0.6rem;
+  }
+
+  .size-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .sz {
+    width: 100%;
+    height: 42px;
+    font-size: 0.65rem;
+  }
+
+  .qty-wrap {
+    width: 100%;
+    margin-bottom: 1.2rem;
+  }
+
+  .qty-num {
+    flex: 1;
+  }
+
+  .btn-outline,
+  .btn-fill {
+    font-size: 0.7rem;
+    padding: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
 
   /* move close button away from thumbs */
-  .pmodal-close { right: auto; left: .8rem; }
+  .pmodal-close { 
+    right: .8rem; 
+    top: 0.6rem;
+    z-index: 20;
+  }
 }
 
 /* ============================================================
@@ -1139,10 +1260,14 @@ const SIZES        = ['XS','S','M','L','XL','2XL'];
 
     <!-- Gallery -->
     <div class="pmodal-gallery">
-      <div class="pmodal-main-img">
+      <div class="pmodal-main-img" style="position: relative;">
         <img id="pm-img" src="" alt="">
+        <!-- Navigation arrows (mobile only) -->
+        <button id="mobile-prev" class="mobile-nav-arrow mobile-nav-prev" onclick="mobileShowPrev()" aria-label="Previous image" style="display: none;">‹</button>
+        <button id="mobile-next" class="mobile-nav-arrow mobile-nav-next" onclick="mobileShowNext()" aria-label="Next image" style="display: none;">›</button>
       </div>
-      <div class="pmodal-thumbs" id="pm-thumbs"></div>
+      <div id="image-counter" style="text-align: center; padding: 0.8rem; font-size: 0.78rem; color: var(--gray); font-weight: 600; letter-spacing: .1em; display: none;">1/10</div>
+      <div class="pmodal-thumbs" id="pm-thumbs" style="display: none;"></div>
     </div>
 
     <!-- Details -->
@@ -1441,6 +1566,32 @@ function openProduct(code) {
   window.pmImages = p.images || [];
   window.pmCurrentImg = 0;
 
+  // Update image counter for mobile
+  const counter = document.getElementById('image-counter');
+  if (counter && window.pmImages.length > 1) {
+    counter.textContent = '1/' + window.pmImages.length;
+    counter.style.display = 'block';
+  } else if (counter) {
+    counter.style.display = 'none';
+  }
+  
+  // Initialize mobile navigation buttons
+  const prevBtn = document.getElementById('mobile-prev');
+  const nextBtn = document.getElementById('mobile-next');
+  if (window.pmImages.length > 1) {
+    if (prevBtn) {
+      prevBtn.style.display = 'flex';
+      prevBtn.disabled = true; // first image
+    }
+    if (nextBtn) {
+      nextBtn.style.display = 'flex';
+      nextBtn.disabled = false;
+    }
+  } else {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+  }
+
   // Thumbnails
   document.getElementById('pm-thumbs').innerHTML = p.images.map((src, i) => `
     <button class="pthumb ${i === 0 ? 'active' : ''}" onclick="switchImg('${src}',this)" aria-label="View image ${i+1}">
@@ -1483,8 +1634,48 @@ function switchImg(src, btn) {
   // update current index pointer
   if (window.pmImages) {
     const idx = window.pmImages.indexOf(src);
-    if (idx >= 0) window.pmCurrentImg = idx;
+    if (idx >= 0) {
+      window.pmCurrentImg = idx;
+      // Update image counter
+      const counter = document.getElementById('image-counter');
+      if (counter) {
+        counter.textContent = (idx + 1) + '/' + window.pmImages.length;
+      }
+    }
   }
+}
+
+function mobileShowPrev() {
+  if (window.pmImages && window.pmCurrentImg > 0) {
+    window.pmCurrentImg--;
+    updateMobileImage();
+  }
+}
+
+function mobileShowNext() {
+  if (window.pmImages && window.pmCurrentImg < window.pmImages.length - 1) {
+    window.pmCurrentImg++;
+    updateMobileImage();
+  }
+}
+
+function updateMobileImage() {
+  const img = document.getElementById('pm-img');
+  const src = window.pmImages[window.pmCurrentImg];
+  img.style.opacity = '0';
+  setTimeout(() => { img.src = src; img.style.opacity = '1'; }, 120);
+  
+  // Update counter
+  const counter = document.getElementById('image-counter');
+  if (counter) {
+    counter.textContent = (window.pmCurrentImg + 1) + '/' + window.pmImages.length;
+  }
+  
+  // Update button disabled states
+  const prevBtn = document.getElementById('mobile-prev');
+  const nextBtn = document.getElementById('mobile-next');
+  if (prevBtn) prevBtn.disabled = window.pmCurrentImg === 0;
+  if (nextBtn) nextBtn.disabled = window.pmCurrentImg === window.pmImages.length - 1;
 }
 
 function pickSize(size, btn) {
